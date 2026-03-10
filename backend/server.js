@@ -1,9 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const app     = express();
 const PORT    = 5000;
 
-const SERP_API_KEY = process.env.SERP_API_KEY || 'YOUR_SERPAPI_KEY_HERE';
+const SERP_API_KEY = process.env.SERP_API_KEY || 'c50dff8cfaeb084b3ccb5aa8669906295e9cce070acf37afa4fa62e573d9a40c';
 const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY || 'a2f49a32cf0d495a9f009259882f0b29';
 
 const DEFAULT_RADIUS = 20;
