@@ -1,42 +1,51 @@
-const express = require("express");
+const express = require('express');
+const fetch = require('node-fetch');
+const { protect } = require('../middleware/authMiddleware');
 const router = express.Router();
-const fetch = require("node-fetch"); // npm i node-fetch@2
-console.log("SERPAPI_KEY:", process.env.SERPAPI_KEY);
 
-const fallbackEvents = [
-  { title: "Bangalore Tech Meetup", date: "2026-03-10", location: "Koramangala, Bangalore", link: "https://www.meetup.com/" },
-  { title: "Bangalore Music Festival", date: "2026-03-15", location: "MG Road, Bangalore", link: "https://www.eventbrite.com/" },
-  { title: "Food Carnival", date: "2026-03-20", location: "Indiranagar, Bangalore", link: "https://www.eventbrite.com/" }
-];
+// GET /api/events/search?city=Bangalore&query=music
+router.get('/search', protect, async (req, res) => {
+  const { city, query = '' } = req.query;
+  if (!city) return res.status(400).json({ error: 'City is required' });
 
-console.log("SERPAPI_KEY:", process.env.SERPAPI_KEY);
-router.get("/events", async (req, res) => {
-  const location = req.query.location || "Bangalore";
-  const query = `${location} events`;
-  const apiKey = process.env.SERPAPI_KEY;
+  const searchQuery = query ? `${query} events in ${city}` : `events in ${city}`;
+  const apiKey = process.env.SERP_API_KEY;
 
   if (!apiKey) {
-    console.warn("SERPAPI_KEY not found! Using fallback events.");
-    return res.json(fallbackEvents);
+    return res.json(getMockEvents(city, query));
   }
 
-  // Construct URL similar to the working link
-  const url = `https://serpapi.com/search.json?engine=google_events&q=${encodeURIComponent(query)}&hl=en&gl=in&google_domain=google.com&api_key=${apiKey}`;
+  const url = `https://serpapi.com/search.json?engine=google_events&q=${encodeURIComponent(searchQuery)}&hl=en&gl=in&api_key=${apiKey}`;
 
   try {
     const response = await fetch(url);
     const data = await response.json();
-    console.log("FULL SERPAPI RESPONSE:", data);
+    if (data.error) throw new Error(data.error);
 
-    if (data.events_results && data.events_results.length > 0) {
-      return res.json(data.events_results);
-    }
+    const events = (data.events_results || []).slice(0, 12).map(ev => ({
+      title: ev.title,
+      link: ev.link,
+      source: ev.venue?.name || '',
+      date: ev.date?.start_date || ev.date?.when || 'Date TBA',
+      thumbnail: ev.thumbnail || null,
+      snippet: ev.description || '',
+      address: Array.isArray(ev.address) ? ev.address.join(', ') : (ev.address || ''),
+      coordinates: ev.place_id ? null : null, // we could enrich with Geoapify later
+    }));
 
-    res.json(fallbackEvents);
+    // Optionally save search history to DB (handled by frontend after receiving)
+    res.json({ results: events });
   } catch (err) {
-    console.error("Error fetching from SerpAPI:", err);
-    res.json(fallbackEvents);
+    console.error(err);
+    res.json({ results: getMockEvents(city, query) });
   }
 });
+
+function getMockEvents(city, query) {
+  return [
+    { title: `${city} Music Fest`, source: 'City Arena', date: '2025-06-20', snippet: `Great ${query} event`, address: `${city} Center`, link: '#', thumbnail: null },
+    { title: `${city} Food Carnival`, source: 'Expo Grounds', date: '2025-06-25', snippet: 'Tasty bites', address: `${city} Downtown`, link: '#', thumbnail: null },
+  ];
+}
 
 module.exports = router;

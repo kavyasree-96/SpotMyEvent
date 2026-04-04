@@ -14,10 +14,12 @@
     "nodemon": "^3.1.11"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.0",
     "express": "^5.2.1",
-    "mongoose": "^9.2.4",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.4.1",
     "node-fetch": "^2.7.0",
     "serpapi": "^2.2.1"
   }
