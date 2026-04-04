@@ -6,3 +6,29 @@ body {
 .main-content {
   min-height: 100vh;
 }
+/* Geoapify autocomplete custom styles */
+.geoapify-autocomplete-input {
+  width: 100% !important;
+  background: #111 !important;
+  color: #fff !important;
+  border: 1px solid #333 !important;
+  border-radius: 40px !important;
+  padding: 14px 20px !important;
+}
+
+.geoapify-autocomplete-items {
+  background: #1a1a1a !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+.geoapify-autocomplete-item {
+  padding: 12px 20px !important;
+  color: #fff !important;
+  border-bottom: 1px solid #333 !important;
+}
+
+.geoapify-autocomplete-item:hover {
+  background: #EE5007 !important;
+  color: #fff !important;
+}

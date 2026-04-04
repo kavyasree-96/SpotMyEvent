@@ -4,7 +4,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { protect } = require('./middleware/authMiddleware');
 const fetch = require('node-fetch');
-const User = require('./models/User'); // ✅ import at top
+const User = require('./models/User');
 
 connectDB();
 
@@ -22,6 +22,23 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/search-history', protect, require('./routes/searchHistory'));
 app.use('/api/trending-events', protect, require('./routes/trendingEvents'));
 app.use('/api/ai-recommendations', protect, require('./routes/aiRecommendations'));
+
+// ---------- Helper: Geocode ----------
+async function geocodeAddress(address) {
+  if (!process.env.GEOAPIFY_KEY) return null;
+  try {
+    const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&limit=1&apiKey=${process.env.GEOAPIFY_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.features?.length) {
+      const [lng, lat] = data.features[0].geometry.coordinates;
+      return { lat, lng };
+    }
+  } catch (err) {
+    console.error('Geocoding error:', err.message);
+  }
+  return null;
+}
 
 // ---------- Helper: Save Search History ----------
 async function saveSearchHistory(userId, city, query, results) {
@@ -44,7 +61,7 @@ async function saveSearchHistory(userId, city, query, results) {
   }
 }
 
-// ---------- Mock events ----------
+// ---------- Mock events (fallback) ----------
 function getMockEvents(city) {
   return [
     {
@@ -55,11 +72,13 @@ function getMockEvents(city) {
       thumbnail: null,
       description: `A vibrant music festival in ${city}.`,
       venue: 'City Arena',
+      lat: null,
+      lng: null,
     },
   ];
 }
 
-// ---------- Event Search ----------
+// ---------- Event Search (with geocoding) ----------
 const SERP_API_KEY = process.env.SERP_API_KEY;
 
 app.get('/api/events/search', protect, async (req, res) => {
@@ -86,7 +105,9 @@ app.get('/api/events/search', protect, async (req, res) => {
       const response = await fetch(url.toString());
       const data = await response.json();
       if (data.error) throw new Error(data.error);
-      events = (data.events_results || []).slice(0, 12).map(ev => ({
+
+      // Map raw events
+      const rawEvents = (data.events_results || []).slice(0, 12).map(ev => ({
         title: ev.title || 'Untitled',
         date: ev.date?.start_date || ev.date?.when || 'TBA',
         address: Array.isArray(ev.address) ? ev.address.join(', ') : (ev.address || ''),
@@ -95,6 +116,15 @@ app.get('/api/events/search', protect, async (req, res) => {
         description: ev.description || '',
         venue: ev.venue?.name || '',
       }));
+
+      // Geocode each event to get lat/lng
+      events = await Promise.all(rawEvents.map(async (ev) => {
+        if (ev.address) {
+          const coords = await geocodeAddress(ev.address);
+          return { ...ev, lat: coords?.lat || null, lng: coords?.lng || null };
+        }
+        return { ...ev, lat: null, lng: null };
+      }));
     } catch (err) {
       console.error('SerpAPI error:', err.message);
       events = getMockEvents(city);
@@ -102,13 +132,13 @@ app.get('/api/events/search', protect, async (req, res) => {
     }
   }
 
-  // ✅ Save history regardless of source
+  // Save history (with coordinates)
   await saveSearchHistory(req.user._id, city, query, events);
 
   res.json({ results: events, error });
 });
 
-// ---------- Get history ----------
+// ---------- Get user history ----------
 app.get('/api/user/history', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('searchHistory');

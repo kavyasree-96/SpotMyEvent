@@ -11,7 +11,8 @@ export default function EventCard({
   actionLabel, 
   onAction, 
   index = 0,
-  compact = false          // new prop – default false (normal size)
+  compact = false,
+  isExpired = false           // new prop – default false
 }) {
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -22,6 +23,9 @@ export default function EventCard({
   const padding = compact ? "12px" : "20px";
   const titleSize = compact ? "0.9rem" : "1rem";
   const hideDescription = compact; // hide description in compact mode
+
+  // Determine displayed badge (override if expired)
+  const displayBadge = isExpired ? "Expired" : badge;
 
   return (
     <div
@@ -34,6 +38,8 @@ export default function EventCard({
         overflow: "hidden",
         transition: "transform 0.2s, border-color 0.2s",
         transform: hovered ? "translateY(-2px)" : "none",
+        filter: isExpired ? "grayscale(100%)" : "none",
+        opacity: isExpired ? 0.7 : 1,
       }}
     >
       {/* Image container – relative for badge positioning */}
@@ -58,13 +64,13 @@ export default function EventCard({
             No image
           </div>
         )}
-        {badge && (
+        {displayBadge && (
           <span
             style={{
               position: "absolute",
               top: "12px",
               right: "12px",
-              background: "#EE5007",
+              background: isExpired ? "#666" : "#EE5007",
               color: "#fff",
               padding: "3px 10px",
               borderRadius: "100px",
@@ -72,7 +78,7 @@ export default function EventCard({
               fontWeight: "bold",
             }}
           >
-            {badge}
+            {displayBadge}
           </span>
         )}
       </div>

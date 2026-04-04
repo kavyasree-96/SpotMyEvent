@@ -88,7 +88,7 @@ export default function CalendarSync() {
           marginBottom: 30,
           padding: "8px 18px",
           background: "transparent",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid rgba(241, 229, 229, 0.79)",
           color: "white",
           cursor: "pointer",
         }}
@@ -114,7 +114,7 @@ export default function CalendarSync() {
           <div
             key={event.id}
             style={{
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(242, 233, 233, 0.85)",
               padding: 24,
               borderRadius: 14,
               background: "rgba(255,255,255,0.02)",

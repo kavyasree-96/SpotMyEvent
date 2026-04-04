@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CityAutocomplete from '../components/CityAutocomplete';
 import EventCard from '../components/EventCard';
+import EventMapView from '../components/EventMapView';   // ✅ ADD THIS
 import axios from 'axios';
 import { API_BASE } from '../config';
 
@@ -11,6 +12,7 @@ export default function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMap, setShowMap] = useState(false);        // ✅ ADD THIS
   const { user, token } = useAuth();
   const navigate = useNavigate();
 
@@ -75,24 +77,43 @@ export default function Home() {
       {loading && <p style={{ textAlign: 'center', color: '#ccc' }}>Loading events...</p>}
       {!loading && events.length > 0 && (
         <section style={{ padding: '0 24px' }}>
-          <h2 style={{ color: '#fff', marginBottom: '24px' }}>Events in {cityName}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-            {events.map((event, idx) => (
-              <EventCard
-                key={idx}
-                title={event.title}
-                subtitle={event.venue}
-                date={event.date}
-                location={event.address}
-                description={event.description}
-                thumbnail={event.thumbnail}
-                badge="Event"
-                actionLabel="Details"
-                onAction={() => window.open(event.link, '_blank')}
-                index={idx}
-              />
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <h2 style={{ color: '#fff' }}>Events in {cityName}</h2>
+            <button
+              onClick={() => setShowMap(!showMap)}
+              style={{
+                background: '#F8CB2E',
+                border: 'none',
+                padding: '8px 20px',
+                borderRadius: '40px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+              }}
+            >
+              {showMap ? 'Hide Map' : 'Show Map'}
+            </button>
           </div>
+          {showMap ? (
+            <EventMapView events={events} />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+              {events.map((event, idx) => (
+                <EventCard
+                  key={idx}
+                  title={event.title}
+                  subtitle={event.venue}
+                  date={event.date}
+                  location={event.address}
+                  description={event.description}
+                  thumbnail={event.thumbnail}
+                  badge="Event"
+                  actionLabel="Details"
+                  onAction={() => window.open(event.link, '_blank')}
+                  index={idx}
+                />
+              ))}
+            </div>
+          )}
         </section>
       )}
     </div>

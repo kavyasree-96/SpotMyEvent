@@ -35,6 +35,64 @@ export default function SearchHistory() {
     }
   };
 
+  // Robust date parsing: compares year/month/day numerically (no timezone issues)
+  function getEventStatus(dateString) {
+    if (!dateString) return { badge: 'History', isExpired: false };
+
+    let year, month, day;
+
+    // 1. Try native Date parsing (handles ISO, "Month Day, Year", "Day Month Year")
+    const d = new Date(dateString);
+    if (!isNaN(d.getTime())) {
+      year = d.getFullYear();
+      month = d.getMonth();
+      day = d.getDate();
+    } else {
+      // 2. Manual parsing for formats that Date() may misinterpret
+      const monthMap = {
+        january:0, february:1, march:2, april:3, may:4, june:5,
+        july:6, august:7, september:8, october:9, november:10, december:11,
+        jan:0, feb:1, mar:2, apr:3, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11
+      };
+
+      // Try "Month Day, Year" (e.g., "April 28, 2026" or "Jul 16, 2026")
+      let match = dateString.match(/([A-Za-z]+)\s+(\d+),\s+(\d{4})/i);
+      if (match) {
+        const monthName = match[1].toLowerCase();
+        month = monthMap[monthName];
+        day = parseInt(match[2]);
+        year = parseInt(match[3]);
+      } else {
+        // Try "Day Month Year" (e.g., "28 April 2026" or "16 July 2026")
+        match = dateString.match(/(\d+)\s+([A-Za-z]+)\s+(\d{4})/i);
+        if (match) {
+          day = parseInt(match[1]);
+          const monthName = match[2].toLowerCase();
+          month = monthMap[monthName];
+          year = parseInt(match[3]);
+        }
+      }
+    }
+
+    if (year === undefined || month === undefined || day === undefined) {
+      console.warn('Could not parse date:', dateString);
+      return { badge: 'History', isExpired: false };
+    }
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
+
+    let isExpired = false;
+    if (year < currentYear) isExpired = true;
+    else if (year === currentYear && month < currentMonth) isExpired = true;
+    else if (year === currentYear && month === currentMonth && day < currentDay) isExpired = true;
+
+    const badge = isExpired ? 'Expired' : 'Upcoming';
+    return { badge, isExpired };
+  }
+
   if (loading) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '50px' }}>Loading...</div>;
   if (error) return <div style={{ color: 'red', textAlign: 'center', marginTop: '50px' }}>Error: {error}</div>;
   if (history.length === 0) return <div style={{ color: '#fff', textAlign: 'center', marginTop: '50px' }}>No search history yet. Go to Home and search for events.</div>;
@@ -56,23 +114,27 @@ export default function SearchHistory() {
             paddingBottom: '12px',
             scrollbarWidth: 'thin'
           }}>
-            {(entry.results || []).map((event, i) => (
-              <div key={i} style={{ minWidth: '240px', maxWidth: '240px' }}>
-                <EventCard
-                  title={event.title}
-                  subtitle={event.venue}
-                  date={event.date}
-                  location={event.address}
-                  description={event.description}
-                  thumbnail={event.thumbnail}
-                  badge="History"
-                  actionLabel="View"
-                  onAction={() => window.open(event.link, '_blank')}
-                  index={i}
-                  compact={true}
-                />
-              </div>
-            ))}
+            {(entry.results || []).map((event, i) => {
+              const { badge: statusBadge, isExpired } = getEventStatus(event.date);
+              return (
+                <div key={i} style={{ minWidth: '240px', maxWidth: '240px' }}>
+                  <EventCard
+                    title={event.title}
+                    subtitle={event.venue}
+                    date={event.date}
+                    location={event.address}
+                    description={event.description}
+                    thumbnail={event.thumbnail}
+                    badge={statusBadge}
+                    actionLabel="View"
+                    onAction={() => window.open(event.link, '_blank')}
+                    isExpired={isExpired}
+                    index={i}
+                    compact={true}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}

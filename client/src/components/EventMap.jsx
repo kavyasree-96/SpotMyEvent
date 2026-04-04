@@ -1,3 +1,4 @@
+import { GEOAPIFY_KEY } from "../config";
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -28,10 +29,10 @@ const EventMap = ({ center, events }) => {
       zoom={12}
       style={{ height: '400px', width: '100%', borderRadius: '16px' }}
     >
-      <TileLayer
-        url={`https://maps.geoapify.com/v1/tile/carto/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_KEY}`}
-        attribution='&copy; <a href="https://www.geoapify.com/">Geoapify</a>'
-      />
+     <TileLayer
+  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+/>
       <SetView center={center} />
       {center && <Marker position={center}><Popup>Selected city</Popup></Marker>}
       {/* Here you could add markers for each event after geocoding */}
